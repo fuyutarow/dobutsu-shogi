@@ -105,7 +105,6 @@ export class Duckshogi extends React.Component<Props, {}> {
     return (
       <div>
         <h3>STEP: { this.props.state.step }</h3>
-        <h3>{ this.props.state.board }</h3>
         <p><button onClick={ () => this.props.actions.undo() }>UNDO</button></p>
         <canvas ref="myCanvas"/>
       </div>

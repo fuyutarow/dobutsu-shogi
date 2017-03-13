@@ -3,8 +3,10 @@ import * as ReactDOM from 'react-dom';
 import { DuckshogiState, ActionDispatcher } from './module';
 import * as Immutable from 'immutable';
 
-import { TPI, INTERVAL, W, H, R, MERGINX, MERGINY } from './util';
+import { TPI, INTERVAL, W, H, R, MERGINX, MERGINY, PIECES } from './util';
 import { p2northwestXY, p2centerXY, mouse2p, willPosition } from './util';
+import Duckmaster from './duckshogi-ai';
+const AI = new Duckmaster;
 
 interface Props {
   state: DuckshogiState;
@@ -17,7 +19,7 @@ export class Duckshogi extends React.Component<Props, {}> {
   gameState: string;
   ctx: any;
 
-  frenemy = (x:number, y:number, r:number, f:number) => {
+  frenemy = ( x:number, y:number, r:number, f:number ) => {
     this.ctx.beginPath();
     if( f>0 ){// frined
       this.ctx.moveTo( x - r*Math.cos(TPI/4), y - r*Math.sin(TPI/4) );
@@ -57,6 +59,9 @@ export class Duckshogi extends React.Component<Props, {}> {
     }
 
   drawSquares = () => {
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.rect( 0, 0, W*INTERVAL + 2*MERGINX, H*INTERVAL + 2*MERGINY);
+    this.ctx.fill();
     Immutable.Range(0,18).toArray()
       .map( p => {
         this.ctx.beginPath();
@@ -78,34 +83,39 @@ export class Duckshogi extends React.Component<Props, {}> {
       .filter( a => a.v!=0 )
       .map( a => {
         switch( Math.abs(a.v) ){
-          case 1: this.ctx.fillStyle = '#ff4500'; break;
-          case 2: this.ctx.fillStyle = '#039be5'; break;
-          case 4: this.ctx.fillStyle = '#ffff00'; break;
-          case 8: this.ctx.fillStyle = '#90ee90'; break;
-          case 16: this.ctx.fillStyle = '#ff00aa'; break; }
+          case PIECES["Lion"]: this.ctx.fillStyle = '#ff4500'; break;
+          case PIECES["Elephant"]: this.ctx.fillStyle = '#039be5'; break;
+          case PIECES["Giraffe"]: this.ctx.fillStyle = '#ffff22'; break;
+          case PIECES["Chick"]: this.ctx.fillStyle = '#90ee90'; break;
+          case PIECES["Hen"]: this.ctx.fillStyle = '#ee00aa'; break; }
         this.frenemy( p2centerXY(a.idx).x, p2centerXY(a.idx).y, R, a.v )});
+
     const shift = 20;
     this.props.state.pool
       .map( (a,idx) => {
         switch( idx%3 ){
-          case 0: this.ctx.fillStyle = '#00bfff'; break;
+          case 0: this.ctx.fillStyle = '#039be5'; break;
           case 1: this.ctx.fillStyle = '#ffff22'; break;
           case 2: this.ctx.fillStyle = '#90ee90'; break; }
         if( idx < 3 ){
-          if( a >= 1 ) this.frenemy( (idx+0.5)*INTERVAL*W/3 + MERGINX - shift/2, MERGINY/2, R, -1 );
-          if( a >= 2 ) this.frenemy( (idx+0.5)*INTERVAL*W/3 + MERGINX + shift/2, MERGINY/2, R, -1 );
+          if( a >= 1 ) this.frenemy( (idx+0.5)*INTERVAL*W/3 + MERGINX + shift/2, MERGINY/2, R, -1 );
+          if( a >= 2 ) this.frenemy( (idx+0.5)*INTERVAL*W/3 + MERGINX - shift/2, MERGINY/2, R, -1 );
         }
         if( idx >= 3 ){
           if( a >= 1 ) this.frenemy( (idx-2.5)*INTERVAL*W/3 + MERGINX - shift/2, 1.5*MERGINY + INTERVAL*H, R, 1 );
-          if( a >= 2 ) this.frenemy( (idx-2.5)*INTERVAL*W/3 + MERGINX - shift/2, 1.5*MERGINY + INTERVAL*H, R, 1 );
+          if( a >= 2 ) this.frenemy( (idx-2.5)*INTERVAL*W/3 + MERGINX + shift/2, 1.5*MERGINY + INTERVAL*H, R, 1 );
         }});
     }
 
   render() {
     return (
       <div>
-        <h3>STEP: { this.props.state.step }</h3>
-        <p><button onClick={ () => this.props.actions.undo() }>UNDO</button></p>
+      <h3>STEP: { this.props.state.step }</h3>
+        <p>
+          <button onClick={ () => {
+            if( this.props.state.step%2 == 0 ) this.props.actions.undo();
+          }}>UNDO</button>
+        </p>
         <canvas ref="myCanvas"/>
       </div>
     );
@@ -120,9 +130,11 @@ export class Duckshogi extends React.Component<Props, {}> {
     this.drawSquares();
     this.drawPieces();
 
-    canvas.onmousedown = e => {
-      const p = mouse2p( e.offsetX, e.offsetY );
-      this.props.actions.click( p );
+    if( this.props.state.step%2 == 0 ){
+      canvas.onmousedown = e => {
+        const p = mouse2p( e.offsetX, e.offsetY );
+        this.props.actions.click( p );
+      }
     }
   }
 
@@ -131,6 +143,16 @@ export class Duckshogi extends React.Component<Props, {}> {
 
     this.drawSquares();
     this.drawPieces();
+
+// for AI
+    if( this.props.state.step%2==1 && this.props.state.phase=="waiting" ){
+      this.ctx.fillStyle = 'rgba( 120, 120, 20, 0.2 )';
+      this.ctx.rect(0,0,W*INTERVAL + 2*MERGINX,H*INTERVAL + 2*MERGINY);
+      this.ctx.fill();
+      AI.readWorld( this.props.state );
+      const move = AI.minimax();
+      setTimeout( () => this.props.actions.execMove(move), 1000);
+    }
 
 // for terminal
     this.ctx.fillStyle = "#000000";
@@ -145,4 +167,9 @@ export class Duckshogi extends React.Component<Props, {}> {
       this.ctx.fillText("lose!", canvas.width/2, canvas.height*2/3);
     }
   }
+
+  shouldComponentUpdate(){
+    return (this.props.state.phase=="firstWin" || this.props.state.phase=="secondWin")? false: true;
+  }
+
 }

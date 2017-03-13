@@ -13,6 +13,9 @@ export const p2ij = ( p:number ) => {
     i: p%W,
     j: Math.floor(p/W) }};
 
+//export const log2 = ( x:number ) => x==2? 1: x==4? 2: x==8? 3: -100;
+export const log2 = ( x:number ) => Math.round(Math.LOG2E * Math.log(x))
+
 export const p2northwestXY = ( p:number) =>
   p<12? {
     x: p2ij(p).i*INTERVAL + MERGINX,
@@ -50,6 +53,17 @@ export const PIECES = {
   "Giraffe": 4,
   "Chick": 8,
   "Hen": 16,
+}
+
+export const SCORES = {
+  "Lion": 100,
+  "Elephant": 5,
+  "Giraffe": 5,
+  "Chick": 4,
+  "Hen": 16,
+  "EinPool": 3,
+  "GinPool": 3,
+  "CinPool": 1,
 }
 
 const moving = ( s:string ) =>

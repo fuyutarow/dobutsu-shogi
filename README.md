@@ -5,7 +5,9 @@
 Dobutsu-shogi is a board game for two players. Each players' goal is to capture Lion.
 <br>
 references
+<br>
 https://en.wikipedia.org/wiki/D%C5%8Dbutsu_sh%C5%8Dgi
+<br>
 https://shogivancouver.wordpress.com/animal-shogi/
 
 ## Demo

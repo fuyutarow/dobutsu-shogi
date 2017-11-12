@@ -12,7 +12,7 @@ https://shogivancouver.wordpress.com/animal-shogi/
 
 ## Demo
 
-https://ytro10.github.io/dobutsu-shogi/
+https://fytroo.github.io/dobutsu-shogi/
 
 ## Requirement
 
